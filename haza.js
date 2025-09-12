@@ -1,15 +1,15 @@
 // Spawns a new, permanent "Super Workbench" in a popup window.
-// This variant: removes all Firebase-related code and adds
-// - download/export of output (plain text + JSON)
-// - persistent command history (localStorage)
-// - improved network logging (fetch + XHR)
-// - console mirror (log/warn/error forwarded to output)
-// - copy output, toggle timestamps, and small UX niceties
+// Fixed: escaped template interpolations so the outer template literal
+// doesn't try to evaluate inner ${...} sequences (this caused the
+// "Unexpected identifier '$'" SyntaxError).
 //
-// Bahasa comments kept for context.
+// This file is the same modified workbench (no Firebase, added download,
+// persistent history, network/XHR instrumentation, console mirror, etc.),
+// but with all inner "${" occurrences escaped as "\${" inside the
+// fullWorkbenchHTML string so the inner scripts are preserved verbatim.
 
 (function() {
-  console.log("Mempersiapkan peluncuran 'Super Workbench' versi MODIFIED...");
+  console.log("Mempersiapkan peluncuran 'Super Workbench' versi FIXED...");
 
   const fullWorkbenchHTML = `
 <!DOCTYPE html>
@@ -170,7 +170,7 @@
                     const ts = new Date().toISOString();
                     const netEntry = { timestamp: ts, type: 'network', method, url: urlString, details };
                     netLogs.push(netEntry);
-                    allLogEntries.push({ timestamp: ts, level: 'network', message: `${method} ${urlString}`, details });
+                    allLogEntries.push({ timestamp: ts, level: 'network', message: method + ' ' + urlString, details });
                     appendNetworkElement(netEntry);
                     try { localStorage.setItem(LOGS_KEY, JSON.stringify(allLogEntries.slice(-2000))); } catch(e){}
                 }
@@ -237,7 +237,8 @@
                             await navigator.clipboard.writeText(netEntry.url);
                         } else {
                             const tempInput = document.createElement('textarea');
-                            tempInput.style.position = 'absolute'; tempInput.style.left = '-9999px';
+                            tempInput.style.position = 'absolute';
+                            tempInput.style.left = '-9999px';
                             tempInput.value = netEntry.url;
                             document.body.appendChild(tempInput);
                             tempInput.select();
