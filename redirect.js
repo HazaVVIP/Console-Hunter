@@ -6,7 +6,7 @@
       return;
     }
 
-    newWin.location.href = "https://www.google.com";
+    newWin.location.href = "https://evil.com/";
   } catch (e ) {
   }
 })();
