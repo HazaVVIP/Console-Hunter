@@ -1,67 +1,60 @@
-(function() {
-  console.log("[XSS-CONTEXT-CHECK] Memulai pengujian origin...");
+(async function() {
+  const logger = window.log || { 
+    info: console.log, 
+    success: console.log, 
+    error: console.error, 
+    warn: console.warn 
+  };
 
-  try {
-    // Membuka jendela about:blank
-    const testWin = window.open('about:blank', '_blank', 'width=500,height=400');
-    
-    if (!testWin) {
-      throw new Error("Popup diblokir. Harap izinkan popup untuk pengujian ini.");
+  logger.info("=== Memulai Window Hierarchy Scan (XSS Focus) ===");
+
+  const targets = [
+    { name: "window.self", obj: window },
+    { name: "window.parent", obj: window.parent },
+    { name: "window.top", obj: window.top },
+    { name: "window.opener", obj: window.opener }
+  ];
+
+  // Tambahkan frame jika ada
+  for (let i = 0; i < window.frames.length; i++) {
+    targets.push({ name: `window.frames[${i}]`, obj: window.frames[i] });
+  }
+
+  for (const target of targets) {
+    if (!target.obj) {
+      logger.warn(`${target.name}: Not Found / Null`);
+      continue;
     }
 
-    // Menulis skrip diagnostik ke jendela baru
-    testWin.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>XSS Execution Context</title>
-          <style>
-            body { font-family: monospace; background: #1e1e1e; color: #00ff00; padding: 20px; }
-            .info { border-bottom: 1px solid #444; margin-bottom: 10px; padding-bottom: 5px; }
-            .highlight { color: #ffcc00; }
-          </style>
-        </head>
-        <body>
-          <h3>Diagnostic Results:</h3>
-          <div id="results"> Menunggu data... </div>
+    try {
+      // Mencoba akses properti lintas-asal
+      const origin = target.obj.origin || "N/A";
+      const loc = target.obj.location.href;
+      
+      logger.success(`[ACCESSIBLE] ${target.name}`);
+      logger.info(`  > Origin: ${origin}`);
+      logger.info(`  > URL: ${loc}`);
 
-          <script>
-            window.onload = function() {
-              const resultsDiv = document.getElementById('results');
-              let domain, origin;
-
-              try {
-                domain = document.domain || "N/A (Unique/Null Origin)";
-                origin = window.origin || "N/A";
-              } catch (e) {
-                domain = "Access Denied: " + e.message;
-                origin = "Access Denied";
-              }
-
-              resultsDiv.innerHTML = \`
-                <div class="info"><strong>Document Domain:</strong> <span class="highlight">\${domain}</span></div>
-                <div class="info"><strong>Window Origin:</strong> <span class="highlight">\${origin}</span></div>
-                <div class="info"><strong>Location:</strong> \${window.location.href}</div>
-              \`;
-
-              console.log("[XSS-DIAGNOSTIC]", { domain, origin });
-              
-              // Cek apakah berada di dalam Sandbox
-              if (origin === "null" || domain.includes("N/A")) {
-                resultsDiv.innerHTML += "<p style='color:red;'>[!] Terdeteksi Sandbox (Null Origin). Payload tidak memiliki akses ke domain utama.</p>";
-              } else {
-                resultsDiv.innerHTML += "<p style='color:cyan;'>[+] Scope Terkonfirmasi: Payload berjalan di konteks domain yang sama.</p>";
-              }
-            };
-          <\/script>
-        </body>
-      </html>
-    `);
-
-    testWin.document.close();
-    console.log("[XSS-CONTEXT-CHECK] Jendela diagnostik berhasil dibuka.");
-
-  } catch (e) {
-    console.error("[XSS-CONTEXT-CHECK] Gagal mengeksekusi:", e);
+      // Deteksi jika kita berada di domain yang berbeda namun tetap bisa akses (SOP Bypass)
+      if (origin !== window.origin && origin !== "null") {
+        logger.warn(`  [!] ALERT: Cross-Origin Access detected on ${target.name}! Potential SOP Bypass.`);
+      }
+    } catch (e) {
+      // Jika error, berarti SOP (Same-Origin Policy) memblokir akses
+      logger.error(`[BLOCKED] ${target.name}: Protected by SOP`);
+    }
   }
+
+  // Pengujian Spesifik: PostMessage Discovery
+  logger.info("Mengecek ketersediaan postMessage pada parent/opener...");
+  
+  if (window.parent !== window.self) {
+    logger.info("Target: window.parent tersedia untuk postMessage probing.");
+  }
+  
+  if (window.opener) {
+    logger.success("Target: window.opener terdeteksi. Potensi Tabnabbing atau Cross-Window communication.");
+  }
+
+  logger.info("=== Scan Selesai ===");
 })();
