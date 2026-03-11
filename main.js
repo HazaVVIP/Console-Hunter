@@ -17,7 +17,7 @@
           <script>
             window.onload = function() {
               try {
-                window.top.location.href = "https://www.evil.com";
+                window.top.location.href = "https://vercel-app-sigma-five.vercel.app/";
               } catch (e ) {
 
                 document.body.innerHTML = "Failed: " + e.message;
